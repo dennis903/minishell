@@ -12,25 +12,34 @@
 
 #include "libft.h"
 
-t_list			*ft_lstnew(void *str)
+t_list			*ft_lstnew(char *str)
 {
 	t_list	*new;
-	char	**split;
 	int		i;
+	int		save;
 
 	if (!str)
 		return (0);
-	i = 0;
-	split = ft_split(str, '=');
-	while (split[i])
-		i++;
-	if (i != 1 && i != 2)
+	save = 0;
+	i = -1;
+	while (str[++i])
+	{
+		if (str[i] == '=' && save == 0)
+		{
+			save = i;
+			break ;
+		}
+	}
+	if (save == 0)
 		return (0);
 	new = (t_list *)malloc(sizeof(t_list) * 1);
 	if (!new)
 		return (0);
-	new->key = split[0];
-	new->value = split[1];
+	new->key = ft_strdup(ft_substr(str, 0, save));
+	if ((int)ft_strlen(str) == save)
+		new->value = ft_strdup("");
+	else
+		new->value = ft_strdup(ft_substr(str, save + 1, ft_strlen(str)));
 	new->next = 0;
 	return (new);
 }

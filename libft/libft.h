@@ -15,6 +15,7 @@
 # include <unistd.h>
 # include <stdint.h>
 # include <stdlib.h>
+# include <stdio.h>
 
 int				ft_isalnum(int c);
 size_t			ft_strlen(const char *str);
@@ -56,12 +57,13 @@ typedef struct	s_list
 {
 	void			*content;
 	struct s_list	*next;
+	struct s_list	*prev;
 	char			*key;
 	char			*value;
+	char			*history;
 }				t_list;
 
-
-t_list			*ft_lstnew(void *content);
+t_list			*ft_lstnew(char *str);
 int				ft_lstsize(t_list *lst);
 t_list			*ft_lstlast(t_list *lst);
 void			ft_lstadd_back(t_list **lst, t_list *new);

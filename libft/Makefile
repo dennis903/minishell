@@ -12,7 +12,7 @@
 
 CC      = gcc
 CFLAGS  = -Wall -Wextra -Werror
-AR      = ar rc
+AR      = ar rcs
 RANLIB  = ranlib
 
 NAME    = libft.a
@@ -62,26 +62,22 @@ SRCS	= ./ft_memset.c \
 		  ./ft_lstmap.c
 
 OBJS    = $(SRCS:.c=.o)
-OBJS2	= $(SRCS_B:.c=.o)
-
-.PHONY: all, clean, fclean, re, bonus
 
 all: $(NAME)
 
 $(NAME):
-		@$(CC) $(CFLAGS) -c $(SRCS)
-		@$(AR) $(NAME) $(OBJS)
-		@$(RANLIB) $(NAME)
+		$(CC) $(CFLAGS) -c $(SRCS)
+		$(AR) $(NAME) $(OBJS)
 
 clean:
-		@rm -f $(OBJS) $(OBJS2)
+		rm -f $(OBJS) $(OBJS2)
 
 fclean: clean
-		@rm -f $(NAME)
+		rm -f $(NAME)
 
 re:		fclean all
 
 bonus:
-		@$(CC) $(CFLAGS) -c $(SRCS_B)
-		@$(AR) $(NAME) $(OBJS2)
-		@$(RANLIB) $(NAME)
+		$(CC) $(CFLAGS) -c $(SRCS_B)
+		$(AR) $(NAME) $(OBJS2)
+		$(RANLIB) $(NAME)
