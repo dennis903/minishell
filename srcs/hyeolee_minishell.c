@@ -84,8 +84,6 @@ void			quote_check(char ch, t_quote *quote)
 		quote->quote = ch;
 }
 
-
-
 int				quote_error_check(char *line)
 {
 	int			i;
@@ -115,16 +113,18 @@ int				option_error_check(char *line)
 	{
 		if (is_in_char(*line, "\'\""))
 			quote_check(*line, &quote);
-		if (!is_space(*line))
+		if (!is_space(*line) && !is_in_char(*line, ";|"))
 			option.word = 1;
 		if (is_in_char(*line, ";|"))
 		{
-			if (option.word == 0)
+			if (option.word == -1)
+			{
 				return (0);
-			else
+			}
+			else if (!quote.quote)
 			{
 				option.option = *line;
-				option.word = 0;
+				option.word = -1;
 			}
 		}
 		line++;
@@ -146,7 +146,38 @@ t_token			*new_token(char *str)
 	return (new);
 }
 
-void			tokenization(char *line, t_var *var, t_token**tokens)
+int				is_seperate_token(char *line, int i, t_quote quote)
+{
+	if ((!quote.quote && is_in_char(line[i + 1], "|;"))
+	|| !line[i + 1])
+		return (1);
+	return (0);
+}
+
+void			erase_blank(t_token **tokens)
+{
+	char		*temp;
+	t_token		*tmp_token;
+
+	tmp_token = (*tokens);
+	while (tmp_token)
+	{
+		temp = ft_strtrim(tmp_token->token, " ");
+		free(tmp_token->token);
+		tmp_token->token = ft_strdup(temp);
+		free(temp);
+		tmp_token = tmp_token->next;
+	}
+}
+
+void			get_cmdline(t_token **tokens, t_var *var)
+{
+	erase_blank(tokens);
+	get_cmd(tokens, var);
+}
+
+
+void			big_tokenizer(char *line, t_var *var, t_token**tokens)
 {
 	int			i;
 	int			token_len;
@@ -156,19 +187,26 @@ void			tokenization(char *line, t_var *var, t_token**tokens)
 	token_len = 0;
 	i = 0;
 	quote_init(&quote);
-	line = ft_strtrim(line, " ");
+	while (is_space(line[i]))
+		i++;
 	while (line[i])
 	{
 		if (is_in_char(line[i], "\'\""))
 			quote_check(line[i], &quote);
-		if ((quote.quote == 0 && is_in_char(line[i + 1], ";|"))
-		|| !line[i + 1])
+		if (!quote.quote && is_in_char(line[i], "|;"))
+		{
+			temp = ft_substr(&line[i], 0, 1);
+			token_add_back(tokens, new_token(temp));
+			token_len = 0;
+		}
+		else if (is_seperate_token(line, i, quote))
 		{
 			temp = ft_substr((line + i) - token_len, 0, token_len + 1);
 			token_add_back(tokens, new_token(temp));
 			token_len = 0;
 		}
-		token_len++;
+		else
+			token_len++;
 		i++;
 	}
 }
@@ -177,16 +215,9 @@ void			tokenization(char *line, t_var *var, t_token**tokens)
 int				check_syntax_error(char *line)
 {
 	if (!quote_error_check(line))
-	{
-		write(1, "syntax_error\n", ft_strlen("syntax_error"));
 		return (0);
-	}
 	if (!option_error_check(line))
-	{
-		printf("why\n");
-		write(1, "syntax_error\n", ft_strlen("syntax_error"));
 		return (0);
-	}
 	return (1);
 }
 
@@ -199,13 +230,9 @@ int				parse_minishell(char *line, t_list **head)
 	tokens = NULL;
 	i = 0;
 	if (!check_syntax_error(line))
-		return (0);
-	tokenization(line, &var, &tokens);
-	while (tokens)
-	{
-		printf("%s\n", tokens->token);
-		tokens = tokens->next;
-	}
+		return (-1);
+	big_tokenizer(line, &var, &tokens);
+	get_cmdline(&tokens, &var);
 	return (0);
 }
 
