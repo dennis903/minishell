@@ -27,6 +27,18 @@ typedef struct  s_var
 	int			prev;
 }               t_var;
 
+typedef struct	s_quote
+{
+	char		quote;
+	int			quote_idx;
+}				t_quote;
+
+typedef struct	s_options
+{
+	int			word;
+	char		option;
+}				t_options;
+
 typedef struct  s_token
 {
 	char *token;
