@@ -4,10 +4,8 @@ TARGET = minishell
 OBJS =	./gnl/get_next_line.c \
 		./gnl/get_next_line_utils.c \
 		./srcs/hyeolee_minishell.c \
-		./srcs/init_path.c \
-		./srcs/parsing.c
-		# ./srcs/main.c 
-		
+		./srcs/init_path.c
+
 
 all : $(TARGET)
 

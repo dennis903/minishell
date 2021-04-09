@@ -45,6 +45,22 @@ void			option_init(t_options *option)
 	option->option = 0;
 }
 
+char		*find_in_env(t_list **head, char *str)
+{
+	t_list *temp;
+	char	*buf;
+
+	
+	temp = *head;
+	while (temp)
+	{
+		if (ft_strncmp(temp->key, str, ft_strlen(str)) == 0)
+			return (temp->value);
+		temp = temp->next;
+	}
+	return (NULL);
+}
+
 t_token			*token_lstlast(t_token *lst)
 {
 	t_token *new;
@@ -154,6 +170,108 @@ int				is_seperate_token(char *line, int i, t_quote quote)
 	return (0);
 }
 
+// int				is_variation(char *token, int i, t_quote quote)
+// {
+// 	if (quote.quote == '\'')
+// 		return (0);
+// 	if (!token[i - 1] && token[i - 1] == '\\')
+// 		return (0);
+// 	return (1);
+// }
+
+char			*change_to_constant(char *token, int *var_len, t_list **head)
+{
+	char		*temp;
+	char		*temp2;
+	t_list		*tmp_list;
+	char		buf[2];
+	char		*value;
+
+	(*var_len)++;
+	buf[1] = 0;
+	if (is_space(token[*var_len]))
+	{
+		temp2 = ft_strdup("");
+		return (temp);
+	}
+	while (!is_space(token[*var_len]) && token[*var_len] != 0)
+	{
+		buf[0] = token[*var_len];
+		temp = ft_strjoin(temp2, buf);
+		(*var_len)++;
+	}
+	printf("%s\n", temp);
+	tmp_list = *head;
+	while (tmp_list)
+	{
+		value = find_in_env(head, temp);
+		tmp_list = tmp_list->next;
+	}
+	return (value);
+}
+
+char			*remove_quote(char *token, int *var_len, t_list **head)
+{
+	char		quote_check;
+	int			i;
+	int			idx_len;
+	char		*ret;
+	char		buf[2];
+
+	quote_check = token[i];
+	i = 1;
+	buf[1] = 0;
+	ret = ft_strdup("");
+	printf("%s\n",token);
+	while (token[i] != quote_check)
+	{
+		idx_len = 0;
+		if (quote_check == '\"' && token[i] == '$' &&
+		(i - 1 >= 0 && token[i - 1] != '\\'))
+			ret = ft_strjoin(ret, change_to_constant(&token[i], &idx_len, head));
+		else
+		{
+			buf[0] = token[i];
+			ret = ft_strjoin(ret, buf);
+			idx_len = 1;
+		}
+		i += idx_len;
+	}
+	return (ret);
+}
+
+char			*manufacture_token(char *token, t_list **head)
+{
+	char		*ret;
+	char		buf[2];
+	t_quote		quote;
+	int			i;
+	int			var_len;
+
+	i = 0;
+	ret = 0;
+	buf[1] = 0;
+	quote_init(&quote);
+	if (!ret)
+		ret = ft_strdup("");
+	while (token[i])
+	{
+		var_len = 0;
+		if (is_in_char(token[i], "\'\""))
+			ret = ft_strjoin(ret, remove_quote(&token[i], &var_len, head));
+		else if (token[i] == '$')
+			ret = ft_strjoin(ret, change_to_constant(&token[i], &var_len, head));
+		else
+		{
+			buf[0] = token[i];
+			ft_strjoin(ret, buf);
+			var_len = 1;
+		}
+		i += var_len;
+	}
+	return (ret);
+}
+
 void			erase_blank(t_token **tokens)
 {
 	char		*temp;
@@ -170,10 +288,28 @@ void			erase_blank(t_token **tokens)
 	}
 }
 
-void			get_cmdline(t_token **tokens, t_var *var)
+void			manufacture_cmdline(t_token **tokens, t_var *var, t_list **head)
+{
+	t_token		*temp;
+	char		*tmp_str;
+	int			i;
+
+	i = 0;
+	temp = *tokens;
+	while (temp)
+	{
+		tmp_str = manufacture_token(temp->token, head);
+		temp->token = ft_strdup(tmp_str);
+		free(tmp_str);
+		temp = temp->next;
+		i++;
+	}
+}
+
+void			get_cmdline(t_token **tokens, t_var *var, t_list **head)
 {
 	erase_blank(tokens);
-	get_cmd(tokens, var);
+	manufacture_cmdline(tokens, var, head);
 }
 
 
@@ -232,7 +368,7 @@ int				parse_minishell(char *line, t_list **head)
 	if (!check_syntax_error(line))
 		return (-1);
 	big_tokenizer(line, &var, &tokens);
-	get_cmdline(&tokens, &var);
+	get_cmdline(&tokens, &var, head);
 	return (0);
 }
 
