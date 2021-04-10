@@ -44,7 +44,7 @@ typedef struct  s_token
 	char *token;
 	int flag;
 	char *cmd;
-	char *argv;
+	char **argv;
 	struct s_token *next;
 }               t_token;
 

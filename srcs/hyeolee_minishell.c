@@ -134,9 +134,7 @@ int				option_error_check(char *line)
 		if (is_in_char(*line, ";|"))
 		{
 			if (option.word == -1)
-			{
 				return (0);
-			}
 			else if (!quote.quote)
 			{
 				option.option = *line;
@@ -182,32 +180,53 @@ int				is_seperate_token(char *line, int i, t_quote quote)
 char			*change_to_constant(char *token, int *var_len, t_list **head)
 {
 	char		*temp;
-	char		*temp2;
 	t_list		*tmp_list;
-	char		buf[2];
 	char		*value;
+	int			idx;
 
-	(*var_len)++;
-	buf[1] = 0;
-	if (is_space(token[*var_len]))
-	{
-		temp2 = ft_strdup("");
+	idx = 1;
+	temp = ft_strdup("");
+	if (is_space(token[idx]) || is_in_char(token[idx], "\'\""))
 		return (temp);
-	}
-	while (!is_space(token[*var_len]) && token[*var_len] != 0)
-	{
-		buf[0] = token[*var_len];
-		temp = ft_strjoin(temp2, buf);
-		(*var_len)++;
-	}
-	printf("%s\n", temp);
+	while (!is_space(token[idx]) && token[idx] != 0 &&
+	!is_in_char(token[idx], "\'\""))
+		idx++;
+	temp = ft_substr(token, 1, idx - 1);
 	tmp_list = *head;
 	while (tmp_list)
 	{
 		value = find_in_env(head, temp);
 		tmp_list = tmp_list->next;
 	}
+	*var_len = idx;
 	return (value);
+}
+
+char			*realloc_str(char *dst, char *src)
+{
+	int			src_len;
+	int			dst_len;
+	int			i;
+	char		*temp;
+
+	dst_len	= ft_strlen(dst);
+	src_len = ft_strlen(src);
+	temp = malloc(sizeof(char) * (src_len + dst_len + 1));
+	i = 0;
+	while (*dst)
+	{
+		temp[i] = *dst;
+		i++;
+		dst++;
+	}
+	while (*src)
+	{
+		temp[i] = *src;
+		src++;
+		i++;
+	}
+	temp[i] = 0;
+	return (temp);
 }
 
 char			*remove_quote(char *token, int *var_len, t_list **head)
@@ -218,25 +237,26 @@ char			*remove_quote(char *token, int *var_len, t_list **head)
 	char		*ret;
 	char		buf[2];
 
-	quote_check = token[i];
+	quote_check = *token;
 	i = 1;
 	buf[1] = 0;
 	ret = ft_strdup("");
-	printf("%s\n",token);
 	while (token[i] != quote_check)
 	{
 		idx_len = 0;
-		if (quote_check == '\"' && token[i] == '$' &&
-		(i - 1 >= 0 && token[i - 1] != '\\'))
-			ret = ft_strjoin(ret, change_to_constant(&token[i], &idx_len, head));
+		if (quote_check == '\"' && token[i] == '$' && token[i - 1] != '\\')
+		{
+			ret = realloc_str(ret, change_to_constant(&token[i], &idx_len, head));
+			i += idx_len;
+		}
 		else
 		{
 			buf[0] = token[i];
-			ret = ft_strjoin(ret, buf);
-			idx_len = 1;
+			ret = realloc_str(ret, buf);
+			i++;
 		}
-		i += idx_len;
 	}
+	*var_len = i + 1;
 	return (ret);
 }
 
@@ -258,17 +278,19 @@ char			*manufacture_token(char *token, t_list **head)
 	{
 		var_len = 0;
 		if (is_in_char(token[i], "\'\""))
-			ret = ft_strjoin(ret, remove_quote(&token[i], &var_len, head));
-		else if (token[i] == '$')
-			ret = ft_strjoin(ret, change_to_constant(&token[i], &var_len, head));
+			ret = realloc_str(ret, remove_quote(&token[i], &var_len, head));
+		else if (token[i] == '$' && token[i - 1] != '\\')
+			ret = realloc_str(ret, change_to_constant(&token[i], &var_len, head));
+
 		else
 		{
 			buf[0] = token[i];
-			ft_strjoin(ret, buf);
+			ret = realloc_str(ret, buf);
 			var_len = 1;
 		}
 		i += var_len;
 	}
+	//bachslash 어떻게 처리할지 고민하기
 	return (ret);
 }
 
@@ -306,10 +328,33 @@ void			manufacture_cmdline(t_token **tokens, t_var *var, t_list **head)
 	}
 }
 
+void			seperate_str_cmd(t_token **temp)
+{
+	char		**splits;
+
+	splits = ft_split((*temp)->token, ' ');
+	(*temp)->cmd = splits[0];
+	(*temp)->argv = splits;
+}
+
+void			seperate_cmd(t_token **tokens, t_var *var)
+{
+	t_token		*temp;
+
+	temp = *tokens;
+	while (temp)
+	{
+		seperate_str_cmd(&temp);
+		temp = temp->next;
+	}
+}
+
 void			get_cmdline(t_token **tokens, t_var *var, t_list **head)
 {
 	erase_blank(tokens);
 	manufacture_cmdline(tokens, var, head);
+	// cmd와 argument로 나누기 (redirection 생각해주기) : redirection도 명령어로 처리할까?
+	seperate_cmd(tokens, var);
 }
 
 
